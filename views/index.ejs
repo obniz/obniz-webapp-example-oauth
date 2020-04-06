@@ -1,0 +1,25 @@
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <script src="https://obniz.io/js/jquery-3.2.1.min.js"></script>
+  </head>
+  <body>
+    <h1>Example Authorize</h1>
+    webapp_id: <%=webapp_id%><br>
+    redirect_uri: <%=redirect_uri%><br>
+    <p>
+      <%if(user){%>
+        <h3>Authorized User</h3>
+        <%=JSON.stringify(user)%>
+
+        <h3>User's Devices</h3>
+        <%=JSON.stringify(devices)%>
+      <%}else{%>
+        <a class="btn btn-primary" href="<%=oauth_uri%>">Autohrize</a>
+      <%}%>
+    </p>
+
+  </body>
+</html>
