@@ -1,5 +1,5 @@
 {
-    "name": "obniz-webapp-example-fullmanage",
+    "name": "obniz-webapp-example-oauth",
     "version": "1.0.0",
     "description": "",
     "main": "dist/src/index.js",

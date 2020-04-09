@@ -9,8 +9,8 @@ const graphql_request_1 = require("graphql-request");
 const http_1 = __importDefault(require("http"));
 const path_1 = __importDefault(require("path"));
 const fetch = require("node-fetch");
-const obniz_io = `http://localhost:3000`;
-const api_obniz_io = `http://localhost:3001`;
+const obniz_io = `https://obniz.io`;
+const api_obniz_io = `https://api.obniz.io`;
 const WebAppId = process.env.ID;
 const WebAppToken = process.env.TOKEN;
 let token = null;
@@ -20,12 +20,12 @@ let token = null;
 const expressApp = express_1.default();
 const port = process.env.PORT || "8080";
 expressApp.set("port", port);
-expressApp.set("views", path_1.default.join(__dirname, "../", "views"));
+expressApp.set("views", path_1.default.join(__dirname, "../../", "views"));
 expressApp.set("view engine", "ejs");
 expressApp.use(body_parser_1.default.json());
 expressApp.use(body_parser_1.default.urlencoded({ extended: false }));
 // routing
-expressApp.get("/", async (req, res) => {
+expressApp.get("/", async (req, res, next) => {
     let user;
     let devices;
     if (token) {
@@ -41,22 +41,28 @@ expressApp.get("/", async (req, res) => {
         email
       }
     }`;
-        user = await graphQLClient.request(query);
-        devices = await graphQLClient.request(`{
-        devices(skip:0) {
-          totalCount,
-          pageInfo {
-            hasNextPage,
-            hasPreviousPage
-          },
-          edges{
-            node {
-              id,
-              access_token
+        try {
+            user = await graphQLClient.request(query);
+            devices = await graphQLClient.request(`{
+          devices(skip:0) {
+            totalCount,
+            pageInfo {
+              hasNextPage,
+              hasPreviousPage
+            },
+            edges{
+              node {
+                id,
+                access_token
+              }
             }
           }
+        }`);
         }
-      }`);
+        catch (e) {
+            console.error(e);
+            next(e);
+        }
     }
     const redirect_uri = `http://localhost:${port}/code`;
     res.render("index", {
@@ -67,22 +73,29 @@ expressApp.get("/", async (req, res) => {
         oauth_uri: `${obniz_io}/login/oauth/authorize?webapp_id=${WebAppId}&redirect_uri=${redirect_uri}`,
     });
 });
-expressApp.get("/code", async (req, res) => {
+expressApp.get("/code", async (req, res, next) => {
     const code = req.query.code;
-    const response = await fetch(`${obniz_io}/login/oauth/token?code=${code}`, {
-        method: "post",
-        headers: {
-            "authorization": `Bearer ${WebAppToken}`,
-            "Content-Type": "application/json",
-        },
-    });
-    if (!response.ok) {
-        res.status(500).send(`error`);
+    try {
+        const response = await fetch(`${obniz_io}/login/oauth/token?code=${code}`, {
+            method: "post",
+            headers: {
+                "authorization": `Bearer ${WebAppToken}`,
+                "Content-Type": "application/json",
+            },
+        });
+        if (!response.ok) {
+            res.status(500).send(`error`);
+            return;
+        }
+        const json = await response.json();
+        token = json.token;
+        console.log(`token: ${token}`);
+    }
+    catch (e) {
+        console.error(e);
+        next(e);
         return;
     }
-    const json = await response.json();
-    token = json.token;
-    console.log(`token: ${token}`);
     res.redirect(`/`);
 });
 // Listen

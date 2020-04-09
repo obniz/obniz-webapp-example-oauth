@@ -13,7 +13,7 @@ Specify env
 
 ```
 npm i
-TOKEN=apptoken_ABCDEFG ID=6 npm start
+TOKEN=apptoken_ABCDEFG ID=wa_NDI= npm start
 ```
 
 Open Browser

@@ -20,14 +20,14 @@ const expressApp = express();
 
 const port = process.env.PORT || "8080";
 expressApp.set("port", port);
-expressApp.set("views", path.join(__dirname, "../", "views"));
+expressApp.set("views", path.join(__dirname, "../../", "views"));
 expressApp.set("view engine", "ejs");
 expressApp.use(bodyParser.json());
 expressApp.use(bodyParser.urlencoded({ extended: false }));
 
 // routing
 
-expressApp.get("/", async (req: any, res: any) => {
+expressApp.get("/", async (req: any, res: any, next: any) => {
   let user: any;
   let devices: any;
 
@@ -45,23 +45,28 @@ expressApp.get("/", async (req: any, res: any) => {
       }
     }`;
 
-    user = await graphQLClient.request(query);
+    try {
+      user = await graphQLClient.request(query);
 
-    devices = await graphQLClient.request(`{
-        devices(skip:0) {
-          totalCount,
-          pageInfo {
-            hasNextPage,
-            hasPreviousPage
-          },
-          edges{
-            node {
-              id,
-              access_token
+      devices = await graphQLClient.request(`{
+          devices(skip:0) {
+            totalCount,
+            pageInfo {
+              hasNextPage,
+              hasPreviousPage
+            },
+            edges{
+              node {
+                id,
+                access_token
+              }
             }
           }
-        }
-      }`);
+        }`);
+    } catch (e) {
+      console.error(e);
+      next(e);
+    }
   }
 
   const redirect_uri = `http://localhost:${port}/code`;
@@ -74,24 +79,30 @@ expressApp.get("/", async (req: any, res: any) => {
   });
 });
 
-expressApp.get("/code", async (req: any, res: any) => {
+expressApp.get("/code", async (req: any, res: any, next: any) => {
   const code = req.query.code;
 
-  const response = await fetch(`${obniz_io}/login/oauth/token?code=${code}`, {
-    method: "post",
-    headers: {
-      "authorization": `Bearer ${WebAppToken}`,
-      "Content-Type": "application/json",
-    },
-  });
-  if (!response.ok) {
-    res.status(500).send(`error`);
+  try {
+    const response = await fetch(`${obniz_io}/login/oauth/token?code=${code}`, {
+      method: "post",
+      headers: {
+        "authorization": `Bearer ${WebAppToken}`,
+        "Content-Type": "application/json",
+      },
+    });
+    if (!response.ok) {
+      res.status(500).send(`error`);
+      return;
+    }
+
+    const json = await response.json();
+    token = json.token;
+    console.log(`token: ${token}`);
+  } catch (e) {
+    console.error(e);
+    next(e);
     return;
   }
-
-  const json = await response.json();
-  token = json.token;
-  console.log(`token: ${token}`);
   res.redirect(`/`);
 });
 
