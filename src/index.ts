@@ -83,7 +83,9 @@ expressApp.get("/code", async (req: any, res: any, next: any) => {
   const code = req.query.code;
 
   try {
-    const response = await fetch(`${obniz_io}/login/oauth/token?code=${code}`, {
+    const url = new URL(`${obniz_io}/login/oauth/token`);
+    url.searchParams.append('code', code);
+    const response = await fetch(url, {
       method: "post",
       headers: {
         "authorization": `Bearer ${WebAppToken}`,
